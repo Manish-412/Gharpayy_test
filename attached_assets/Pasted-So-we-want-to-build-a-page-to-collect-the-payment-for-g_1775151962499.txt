@@ -1,0 +1,33 @@
+So we want to build a page to collect the payment for ghar. Pay like the PG booking amount, so how we do. It is, let's pose actual rentes XYZ.Hello. So let's suppose actual rent is 15k. You can consider it X; then we are giving you an offer if you want to pre-book it right away. I will make the price 12k for you, but the price will be valid for only 15 minutes. If it is ok for you, I will get approval. It will be valid for only 15 minutes, and you can make the payment by QR code.
+
+
+
+One month: fill the deposit and 5k the maintenance. This is the journal, and right now to pre-book it you have to pay 10k. We'll make a roughly room lock-in page where they will send a request; then, after we say yes, they can see the page. A little perception is rare; if they miss it, they won't get it, to create scarcitySo let's suppose actual rent is 15k. You can consider it X; then we are giving you an offer if you want to pre-book it right away. I will make the price 12k for you, but the price will be valid for only 15 minutes. If it is ok for you, I will get approval. It will be valid for only 15 minutes, and you can make the payment by QR code.
+
+
+
+One month: fill the deposit and 5k the maintenance. This is the journal, and right now to pre-book it you have to pay 10k. We'll make a roughly room lock-in page where they will send a request; then, after we say yes, they can see the page. A little perception is rare; if they miss it, they won't get it, to create scarcity. . 
+
+
+
+https://gharpayy.com/payment.htmlSo we should be able to send a message by creating it on the WhatsApp, a quotation where the rent is mentioned:
+
+- actual rent
+
+- discounted rent
+
+- deposit
+
+- one-time maintenance fee
+
+- token amount that they are supposed to pay
+
+- stay duration
+
+- notice period
+
+- row number (if possible)
+
+- property name
+
+so that nothing gets messy later. After this, we can send them a quotation on the WhatsApp after getting a WhatsApp message with a payment link. This is what I am expecting to do.
