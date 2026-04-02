@@ -8,11 +8,13 @@ import {
   UpdateBookingParams,
   DeleteBookingParams,
   ApproveBookingParams,
+  ReactivateBookingParams,
   GetWhatsappMessageParams,
   ListBookingsResponse,
   GetBookingResponse,
   UpdateBookingResponse,
   ApproveBookingResponse,
+  ReactivateBookingResponse,
   GetWhatsappMessageResponse,
   GetBookingStatsResponse,
 } from "@workspace/api-zod";
@@ -67,10 +69,7 @@ router.post("/bookings", async (req, res): Promise<void> => {
 
   const [booking] = await db
     .insert(bookingsTable)
-    .values({
-      ...parsed.data,
-      status: "pending",
-    })
+    .values({ ...parsed.data, status: "pending" })
     .returning();
 
   res.status(201).json(GetBookingResponse.parse(buildBookingResponse(booking)));
@@ -159,11 +158,7 @@ router.post("/bookings/:id/approve", async (req, res): Promise<void> => {
 
   const [booking] = await db
     .update(bookingsTable)
-    .set({
-      status: "approved",
-      approvedAt: now,
-      offerExpiresAt: expiresAt,
-    })
+    .set({ status: "approved", approvedAt: now, offerExpiresAt: expiresAt })
     .where(eq(bookingsTable.id, params.data.id))
     .returning();
 
@@ -173,6 +168,31 @@ router.post("/bookings/:id/approve", async (req, res): Promise<void> => {
   }
 
   res.json(ApproveBookingResponse.parse(buildBookingResponse(booking)));
+});
+
+router.post("/bookings/:id/reactivate", async (req, res): Promise<void> => {
+  const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const params = ReactivateBookingParams.safeParse({ id: parseInt(rawId, 10) });
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + 15 * 60 * 1000);
+
+  const [booking] = await db
+    .update(bookingsTable)
+    .set({ status: "approved", approvedAt: now, offerExpiresAt: expiresAt })
+    .where(eq(bookingsTable.id, params.data.id))
+    .returning();
+
+  if (!booking) {
+    res.status(404).json({ error: "Booking not found" });
+    return;
+  }
+
+  res.json(ReactivateBookingResponse.parse(buildBookingResponse(booking)));
 });
 
 router.get("/bookings/:id/whatsapp", async (req, res): Promise<void> => {
@@ -198,29 +218,27 @@ router.get("/bookings/:id/whatsapp", async (req, res): Promise<void> => {
     : "localhost:80";
 
   const bookingUrl = `https://${domain}/bookings/${booking.id}`;
-
-  const roomInfo = booking.roomNumber ? `Room No: ${booking.roomNumber}` : "";
   const savingsAmount = booking.actualRent - booking.discountedRent;
+  const roomInfo = booking.roomNumber ? ` (Room ${booking.roomNumber})` : "";
 
-  const message = `🏠 *Ghar Room Booking Quotation*
+  const message = `Hi ${booking.tenantName}! 🏠
 
-Hi ${booking.tenantName}! Here's your personalized offer for *${booking.propertyName}*${roomInfo ? ` (${roomInfo})` : ""}:
+Here is your *exclusive offer* for *${booking.propertyName}*${roomInfo}:
 
-💰 *Pricing Details:*
-• Actual Rent: ₹${formatIndianCurrency(booking.actualRent)}/month
-• *Discounted Rent: ₹${formatIndianCurrency(booking.discountedRent)}/month* (Save ₹${formatIndianCurrency(savingsAmount)}!)
-• Security Deposit: ₹${formatIndianCurrency(booking.deposit)}
-• One-time Maintenance: ₹${formatIndianCurrency(booking.maintenanceFee)}
-• *Token Amount (to lock in now): ₹${formatIndianCurrency(booking.tokenAmount)}*
+💰 *Rent:* ~~₹${formatIndianCurrency(booking.actualRent)}/mo~~ → *₹${formatIndianCurrency(booking.discountedRent)}/mo*${savingsAmount > 0 ? ` _(Save ₹${formatIndianCurrency(savingsAmount)} every month!)_` : ""}
+🔒 *Security Deposit:* ₹${formatIndianCurrency(booking.deposit)}
+🔧 *One-time Maintenance:* ₹${formatIndianCurrency(booking.maintenanceFee)}
+🕐 *Stay Duration:* ${booking.stayDurationMonths} months
+📅 *Notice Period:* ${booking.noticePeriodMonths} month${booking.noticePeriodMonths !== 1 ? "s" : ""}
 
-📅 *Terms:*
-• Stay Duration: ${booking.stayDurationMonths} month${booking.stayDurationMonths > 1 ? "s" : ""}
-• Notice Period: ${booking.noticePeriodMonths} month${booking.noticePeriodMonths > 1 ? "s" : ""}
+*To lock this room now, pay a token of ₹${formatIndianCurrency(booking.tokenAmount)}* (adjusted in your first rent).
 
-⏰ *This special offer is valid for only 15 minutes after activation. Act now!*
+⏰ *This offer is valid for only 15 minutes* after I activate it. Don't miss it!
 
-Click below to view your offer & pay the token amount:
-${bookingUrl}`;
+Click here to view your offer and pay:
+👉 ${bookingUrl}
+
+Once you pay, reply here with your payment screenshot. I'll send your receipt right away.`;
 
   const phone = booking.tenantPhone.replace(/\D/g, "");
   const encodedMessage = encodeURIComponent(message);

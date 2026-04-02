@@ -31,6 +31,8 @@ export const ListBookingsResponseItem = zod.object({
   tokenAmount: zod.number(),
   stayDurationMonths: zod.number(),
   noticePeriodMonths: zod.number(),
+  upiId: zod.string().nullable(),
+  adminPhone: zod.string().nullable(),
   status: zod.enum(["pending", "approved", "paid", "expired", "cancelled"]),
   approvedAt: zod.string().nullable(),
   offerExpiresAt: zod.string().nullable(),
@@ -54,6 +56,8 @@ export const CreateBookingBody = zod.object({
   tokenAmount: zod.number(),
   stayDurationMonths: zod.number(),
   noticePeriodMonths: zod.number(),
+  upiId: zod.string().nullish(),
+  adminPhone: zod.string().nullish(),
 });
 
 /**
@@ -76,6 +80,8 @@ export const GetBookingResponse = zod.object({
   tokenAmount: zod.number(),
   stayDurationMonths: zod.number(),
   noticePeriodMonths: zod.number(),
+  upiId: zod.string().nullable(),
+  adminPhone: zod.string().nullable(),
   status: zod.enum(["pending", "approved", "paid", "expired", "cancelled"]),
   approvedAt: zod.string().nullable(),
   offerExpiresAt: zod.string().nullable(),
@@ -102,6 +108,8 @@ export const UpdateBookingBody = zod.object({
   tokenAmount: zod.number().optional(),
   stayDurationMonths: zod.number().optional(),
   noticePeriodMonths: zod.number().optional(),
+  upiId: zod.string().nullish(),
+  adminPhone: zod.string().nullish(),
   status: zod
     .enum(["pending", "approved", "paid", "expired", "cancelled"])
     .optional(),
@@ -120,6 +128,8 @@ export const UpdateBookingResponse = zod.object({
   tokenAmount: zod.number(),
   stayDurationMonths: zod.number(),
   noticePeriodMonths: zod.number(),
+  upiId: zod.string().nullable(),
+  adminPhone: zod.string().nullable(),
   status: zod.enum(["pending", "approved", "paid", "expired", "cancelled"]),
   approvedAt: zod.string().nullable(),
   offerExpiresAt: zod.string().nullable(),
@@ -154,6 +164,37 @@ export const ApproveBookingResponse = zod.object({
   tokenAmount: zod.number(),
   stayDurationMonths: zod.number(),
   noticePeriodMonths: zod.number(),
+  upiId: zod.string().nullable(),
+  adminPhone: zod.string().nullable(),
+  status: zod.enum(["pending", "approved", "paid", "expired", "cancelled"]),
+  approvedAt: zod.string().nullable(),
+  offerExpiresAt: zod.string().nullable(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+
+/**
+ * @summary Reactivate an expired or cancelled booking with a fresh 15-minute timer
+ */
+export const ReactivateBookingParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ReactivateBookingResponse = zod.object({
+  id: zod.number(),
+  tenantName: zod.string(),
+  tenantPhone: zod.string(),
+  propertyName: zod.string(),
+  roomNumber: zod.string().nullable(),
+  actualRent: zod.number(),
+  discountedRent: zod.number(),
+  deposit: zod.number(),
+  maintenanceFee: zod.number(),
+  tokenAmount: zod.number(),
+  stayDurationMonths: zod.number(),
+  noticePeriodMonths: zod.number(),
+  upiId: zod.string().nullable(),
+  adminPhone: zod.string().nullable(),
   status: zod.enum(["pending", "approved", "paid", "expired", "cancelled"]),
   approvedAt: zod.string().nullable(),
   offerExpiresAt: zod.string().nullable(),

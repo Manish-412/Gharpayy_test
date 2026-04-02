@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, QrCode, MessageCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const formSchema = z.object({
@@ -23,6 +23,8 @@ const formSchema = z.object({
   tokenAmount: z.coerce.number().min(1, "Token amount must be greater than 0"),
   stayDurationMonths: z.coerce.number().min(1, "Stay duration must be at least 1 month"),
   noticePeriodMonths: z.coerce.number().min(0, "Notice period cannot be negative"),
+  upiId: z.string().optional(),
+  adminPhone: z.string().optional(),
 }).refine(data => data.discountedRent <= data.actualRent, {
   message: "Discounted rent cannot be higher than actual rent",
   path: ["discountedRent"]
@@ -50,17 +52,25 @@ export default function NewBooking() {
       tokenAmount: 0,
       stayDurationMonths: 11,
       noticePeriodMonths: 1,
+      upiId: "",
+      adminPhone: "",
     }
   });
 
   const onSubmit = (values: FormValues) => {
-    createBooking.mutate({ data: values }, {
+    const payload = {
+      ...values,
+      roomNumber: values.roomNumber || undefined,
+      upiId: values.upiId || undefined,
+      adminPhone: values.adminPhone || undefined,
+    };
+    createBooking.mutate({ data: payload }, {
       onSuccess: (data) => {
         queryClient.invalidateQueries({ queryKey: getListBookingsQueryKey() });
         queryClient.invalidateQueries({ queryKey: getGetBookingStatsQueryKey() });
         toast({
-          title: "Booking created",
-          description: "The quotation has been generated successfully.",
+          title: "Quotation created",
+          description: "Go to the booking page to activate the offer and share the link.",
         });
         setLocation(`/bookings/${data.id}/admin`);
       },
@@ -90,10 +100,12 @@ export default function NewBooking() {
       <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+
+            {/* Tenant Details */}
             <Card className="shadow-sm">
               <CardHeader>
                 <CardTitle>Tenant Details</CardTitle>
-                <CardDescription>Basic information about the prospective tenant.</CardDescription>
+                <CardDescription>Who are you sending this quotation to?</CardDescription>
               </CardHeader>
               <CardContent className="grid gap-6 sm:grid-cols-2">
                 <FormField
@@ -114,10 +126,11 @@ export default function NewBooking() {
                   name="tenantPhone"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Phone Number</FormLabel>
+                      <FormLabel>Tenant Phone Number</FormLabel>
                       <FormControl>
                         <Input placeholder="e.g. 9876543210" {...field} />
                       </FormControl>
+                      <FormDescription>Used to send quotation via WhatsApp.</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -125,10 +138,11 @@ export default function NewBooking() {
               </CardContent>
             </Card>
 
+            {/* Property Details */}
             <Card className="shadow-sm">
               <CardHeader>
                 <CardTitle>Property Details</CardTitle>
-                <CardDescription>Which property and room are they booking?</CardDescription>
+                <CardDescription>Which property and room are they pre-booking?</CardDescription>
               </CardHeader>
               <CardContent className="grid gap-6 sm:grid-cols-2">
                 <FormField
@@ -138,7 +152,7 @@ export default function NewBooking() {
                     <FormItem>
                       <FormLabel>Property Name</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g. Ghar Residency Kormangala" {...field} />
+                        <Input placeholder="e.g. Ghar Residency Koramangala" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -160,10 +174,55 @@ export default function NewBooking() {
               </CardContent>
             </Card>
 
+            {/* Payment Setup */}
+            <Card className="shadow-sm border-primary/20">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <QrCode className="w-5 h-5 text-primary" />
+                  Payment Setup
+                </CardTitle>
+                <CardDescription>Configure how the tenant will pay the token amount. Adding your UPI ID enables a scannable QR code on the tenant's payment page.</CardDescription>
+              </CardHeader>
+              <CardContent className="grid gap-6 sm:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="upiId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Your UPI ID (Recommended)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g. yourname@upi or 9876543210@ybl" {...field} value={field.value || ''} />
+                      </FormControl>
+                      <FormDescription>Tenants can scan a QR or tap to open PhonePe / GPay / Paytm directly.</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="adminPhone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-1.5">
+                        <MessageCircle className="w-3.5 h-3.5 text-[#25D366]" />
+                        Your WhatsApp Number
+                      </FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g. 919876543210" {...field} value={field.value || ''} />
+                      </FormControl>
+                      <FormDescription>Tenants tap "I've Paid" to message you directly. Include country code (e.g. 91 for India).</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+
+            {/* Financials & Terms */}
             <Card className="shadow-sm">
               <CardHeader>
                 <CardTitle>Financials & Terms</CardTitle>
-                <CardDescription>Setup the quotation pricing to lock them in.</CardDescription>
+                <CardDescription>Set the pricing to create urgency and lock them in.</CardDescription>
               </CardHeader>
               <CardContent className="grid gap-6 sm:grid-cols-2">
                 <FormField
@@ -171,10 +230,11 @@ export default function NewBooking() {
                   name="actualRent"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Standard Rent (₹)</FormLabel>
+                      <FormLabel>Standard Rent (₹ / month)</FormLabel>
                       <FormControl>
                         <Input type="number" {...field} />
                       </FormControl>
+                      <FormDescription>The regular listed rent — shown as strikethrough to highlight savings.</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -184,11 +244,11 @@ export default function NewBooking() {
                   name="discountedRent"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Offer Rent (₹)</FormLabel>
+                      <FormLabel>Offer Rent (₹ / month)</FormLabel>
                       <FormControl>
                         <Input type="number" {...field} />
                       </FormControl>
-                      <FormDescription>The discounted rate if they book now.</FormDescription>
+                      <FormDescription>The special rate if they book within 15 minutes.</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -211,7 +271,7 @@ export default function NewBooking() {
                   name="maintenanceFee"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Monthly Maintenance (₹)</FormLabel>
+                      <FormLabel>One-time Maintenance (₹)</FormLabel>
                       <FormControl>
                         <Input type="number" {...field} />
                       </FormControl>
@@ -228,12 +288,13 @@ export default function NewBooking() {
                       <FormControl>
                         <Input type="number" {...field} />
                       </FormControl>
-                      <FormDescription>Amount required to lock the room.</FormDescription>
+                      <FormDescription>Amount to lock the room — adjusted against first month's rent.</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                <div className="col-span-full grid gap-6 sm:grid-cols-2 mt-2 pt-6 border-t">
+
+                <div className="col-span-full grid gap-6 sm:grid-cols-2 pt-4 border-t">
                   <FormField
                     control={form.control}
                     name="stayDurationMonths"
@@ -264,11 +325,11 @@ export default function NewBooking() {
               </CardContent>
             </Card>
 
-            <div className="flex justify-end gap-4">
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-3">
               <Link href="/">
-                <Button type="button" variant="outline">Cancel</Button>
+                <Button type="button" variant="outline" className="w-full sm:w-auto">Cancel</Button>
               </Link>
-              <Button type="submit" disabled={createBooking.isPending} className="w-full sm:w-auto min-w-[140px]">
+              <Button type="submit" disabled={createBooking.isPending} className="w-full sm:w-auto min-w-[160px]">
                 {createBooking.isPending ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />

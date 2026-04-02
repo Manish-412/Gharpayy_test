@@ -15,6 +15,8 @@ export const bookingsTable = pgTable("bookings", {
   tokenAmount: integer("token_amount").notNull(),
   stayDurationMonths: integer("stay_duration_months").notNull(),
   noticePeriodMonths: integer("notice_period_months").notNull(),
+  upiId: text("upi_id"),
+  adminPhone: text("admin_phone"),
   status: text("status").notNull().default("pending"),
   approvedAt: timestamp("approved_at", { withTimezone: true }),
   offerExpiresAt: timestamp("offer_expires_at", { withTimezone: true }),

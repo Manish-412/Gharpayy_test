@@ -169,6 +169,31 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /bookings/{id}/reactivate:
+    post:
+      operationId: reactivateBooking
+      tags: [bookings]
+      summary: Reactivate an expired or cancelled booking with a fresh 15-minute timer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Booking reactivated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /bookings/{id}/whatsapp:
     get:
       operationId: getWhatsappMessage
@@ -252,6 +277,10 @@ components:
           type: integer
         noticePeriodMonths:
           type: integer
+        upiId:
+          type: ["string", "null"]
+        adminPhone:
+          type: ["string", "null"]
         status:
           type: string
           enum: [pending, approved, paid, expired, cancelled]
@@ -276,6 +305,8 @@ components:
         - tokenAmount
         - stayDurationMonths
         - noticePeriodMonths
+        - upiId
+        - adminPhone
         - status
         - approvedAt
         - offerExpiresAt
@@ -307,6 +338,10 @@ components:
           type: integer
         noticePeriodMonths:
           type: integer
+        upiId:
+          type: ["string", "null"]
+        adminPhone:
+          type: ["string", "null"]
       required:
         - tenantName
         - tenantPhone
@@ -344,6 +379,10 @@ components:
           type: integer
         noticePeriodMonths:
           type: integer
+        upiId:
+          type: ["string", "null"]
+        adminPhone:
+          type: ["string", "null"]
         status:
           type: string
           enum: [pending, approved, paid, expired, cancelled]

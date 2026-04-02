@@ -615,6 +615,90 @@ export const useApproveBooking = <
 };
 
 /**
+ * @summary Reactivate an expired or cancelled booking with a fresh 15-minute timer
+ */
+export const getReactivateBookingUrl = (id: number) => {
+  return `/api/bookings/${id}/reactivate`;
+};
+
+export const reactivateBooking = async (
+  id: number,
+  options?: RequestInit,
+): Promise<Booking> => {
+  return customFetch<Booking>(getReactivateBookingUrl(id), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getReactivateBookingMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof reactivateBooking>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof reactivateBooking>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["reactivateBooking"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof reactivateBooking>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return reactivateBooking(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ReactivateBookingMutationResult = NonNullable<
+  Awaited<ReturnType<typeof reactivateBooking>>
+>;
+
+export type ReactivateBookingMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Reactivate an expired or cancelled booking with a fresh 15-minute timer
+ */
+export const useReactivateBooking = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof reactivateBooking>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof reactivateBooking>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getReactivateBookingMutationOptions(options));
+};
+
+/**
  * @summary Get a pre-filled WhatsApp message for a booking
  */
 export const getGetWhatsappMessageUrl = (id: number) => {

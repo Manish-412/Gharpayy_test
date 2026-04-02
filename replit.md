@@ -22,10 +22,12 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 ### Ghar Room Booking (`artifacts/ghar-booking`)
 - **Preview path**: `/`
 - A PG/room pre-booking payment tool for property owners in India
-- Admin can create quotations (rent, discount, deposit, maintenance, token amount, stay duration, notice period)
-- Admin approves → starts a 15-minute countdown timer (offer expires)
-- Tenant-facing page shows live countdown + full quote + QR payment placeholder
-- WhatsApp integration: generates pre-filled WhatsApp message with full quotation
+- Admin creates quotations (rent, discount, deposit, maintenance, token, UPI ID, admin WhatsApp number, stay/notice terms)
+- Admin approves → 15-minute countdown starts; admin shares tenant link via WhatsApp
+- Tenant page: live urgency-colored countdown, real UPI QR code (from UPI ID), deep links for PhonePe/GPay/Paytm/other UPI, "I've Paid" WhatsApp button to notify owner
+- Expired offer: tenant can request new offer via WhatsApp; admin has "Reactivate Offer" button for instant fresh 15-minute window
+- Paid state: full receipt page with shareable receipt; admin sees payment confirmed state
+- WhatsApp button visible on admin page for ALL booking statuses
 
 ### API Server (`artifacts/api-server`)
 - **Preview path**: `/api`

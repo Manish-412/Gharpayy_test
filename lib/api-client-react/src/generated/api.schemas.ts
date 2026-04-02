@@ -37,6 +37,10 @@ export interface Booking {
   tokenAmount: number;
   stayDurationMonths: number;
   noticePeriodMonths: number;
+  /** @nullable */
+  upiId: string | null;
+  /** @nullable */
+  adminPhone: string | null;
   status: BookingStatus;
   /** @nullable */
   approvedAt: string | null;
@@ -59,6 +63,10 @@ export interface CreateBookingBody {
   tokenAmount: number;
   stayDurationMonths: number;
   noticePeriodMonths: number;
+  /** @nullable */
+  upiId?: string | null;
+  /** @nullable */
+  adminPhone?: string | null;
 }
 
 export type UpdateBookingBodyStatus =
@@ -85,6 +93,10 @@ export interface UpdateBookingBody {
   tokenAmount?: number;
   stayDurationMonths?: number;
   noticePeriodMonths?: number;
+  /** @nullable */
+  upiId?: string | null;
+  /** @nullable */
+  adminPhone?: string | null;
   status?: UpdateBookingBodyStatus;
 }
 

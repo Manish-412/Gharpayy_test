@@ -21,6 +21,10 @@ export interface Booking {
   tokenAmount: number;
   stayDurationMonths: number;
   noticePeriodMonths: number;
+  /** @nullable */
+  upiId: string | null;
+  /** @nullable */
+  adminPhone: string | null;
   status: BookingStatus;
   /** @nullable */
   approvedAt: string | null;

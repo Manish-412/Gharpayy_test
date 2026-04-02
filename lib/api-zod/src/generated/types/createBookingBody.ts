@@ -19,4 +19,8 @@ export interface CreateBookingBody {
   tokenAmount: number;
   stayDurationMonths: number;
   noticePeriodMonths: number;
+  /** @nullable */
+  upiId?: string | null;
+  /** @nullable */
+  adminPhone?: string | null;
 }
