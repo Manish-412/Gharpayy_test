@@ -12,4 +12,8 @@ RUN pnpm --filter @workspace/api-server run build
 
 ENV NODE_ENV=production
 
-CMD ["node", "artifacts/api-server/dist/index.mjs"]
+# show built files at build time so we catch missing artifacts early
+RUN ls -la artifacts/api-server/dist || true
+
+# use absolute path to the built server entry to avoid 'pid1' exec issues
+CMD ["node", "/app/artifacts/api-server/dist/index.mjs"]
