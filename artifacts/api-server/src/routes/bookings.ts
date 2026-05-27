@@ -23,7 +23,7 @@ const router: IRouter = Router();
 
 function formatIndianCurrency(amount: number): string {
   return new Intl.NumberFormat("en-IN").format(amount);
-}
+// import { db, bookingsTable } from "@workspace/db";
 
 function buildBookingResponse(booking: typeof bookingsTable.$inferSelect) {
   const now = new Date().toISOString();
@@ -48,28 +48,52 @@ router.get("/bookings", async (req, res): Promise<void> => {
 router.get("/bookings/stats", async (req, res): Promise<void> => {
   const bookings = await db.select().from(bookingsTable);
   const stats = {
-    total: bookings.length,
+type BookingRecord = {
+  id: number;
+  tenantName: string;
+  tenantPhone: string;
+  propertyName: string;
+  roomNumber: string | null;
+  actualRent: number;
+  discountedRent: number;
+  deposit: number;
+  maintenanceFee: number;
+  tokenAmount: number;
+  stayDurationMonths: number;
+  noticePeriodMonths: number;
+  upiId: string | null;
+  adminPhone: string | null;
+  status: "pending" | "approved" | "paid" | "expired" | "cancelled";
+  approvedAt: string | null;
+  offerExpiresAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+const bookingsStore: BookingRecord[] = [];
+let nextBookingId = 1;
+
+function buildBookingResponse(booking: BookingRecord) {
+  return booking;
+}
+
     pending: bookings.filter((b) => b.status === "pending").length,
-    approved: bookings.filter((b) => b.status === "approved").length,
-    paid: bookings.filter((b) => b.status === "paid").length,
-    expired: bookings.filter((b) => b.status === "expired").length,
-    cancelled: bookings.filter((b) => b.status === "cancelled").length,
-    totalRevenue: bookings
+  const mapped = [...bookingsStore].sort((left, right) => right.id - left.id).map(buildBookingResponse);
       .filter((b) => b.status === "paid")
       .reduce((sum, b) => sum + b.tokenAmount, 0),
   };
   res.json(GetBookingStatsResponse.parse(stats));
-});
+  const bookings = [...bookingsStore];
 
 router.post("/bookings", async (req, res): Promise<void> => {
-  try {
-    const parsed = CreateBookingBody.safeParse(req.body);
-    if (!parsed.success) {
-      res.status(400).json({ error: parsed.error.message });
-      return;
-    }
-
-    const now = new Date();
+    pending: bookings.filter((booking) => booking.status === "pending").length,
+    approved: bookings.filter((booking) => booking.status === "approved").length,
+    paid: bookings.filter((booking) => booking.status === "paid").length,
+    expired: bookings.filter((booking) => booking.status === "expired").length,
+    cancelled: bookings.filter((booking) => booking.status === "cancelled").length,
+    totalRevenue: bookings
+      .filter((booking) => booking.status === "paid")
+      .reduce((sum, booking) => sum + booking.tokenAmount, 0),
     const [booking] = await db
       .insert(bookingsTable)
       .values({
@@ -83,19 +107,31 @@ router.post("/bookings", async (req, res): Promise<void> => {
       createdAt: now.toISOString(),
       updatedAt: now.toISOString(),
     }));
-  } catch (error) {
-    console.error("Error creating booking:", error);
-    res.status(500).json({
-      error: error instanceof Error ? error.message : "Failed to create booking",
-    });
-  }
-});
+    const booking: BookingRecord = {
+      id: nextBookingId++,
+      tenantName: parsed.data.tenantName,
+      tenantPhone: parsed.data.tenantPhone,
+      propertyName: parsed.data.propertyName,
+      roomNumber: parsed.data.roomNumber ?? null,
+      actualRent: parsed.data.actualRent,
+      discountedRent: parsed.data.discountedRent,
+      deposit: parsed.data.deposit,
+      maintenanceFee: parsed.data.maintenanceFee,
+      tokenAmount: parsed.data.tokenAmount,
+      stayDurationMonths: parsed.data.stayDurationMonths,
+      noticePeriodMonths: parsed.data.noticePeriodMonths,
+      upiId: parsed.data.upiId ?? null,
+      adminPhone: parsed.data.adminPhone ?? null,
+      status: "pending",
+      approvedAt: null,
+      offerExpiresAt: null,
+      createdAt: now.toISOString(),
+      updatedAt: now.toISOString(),
+    };
 
-router.get("/bookings/:id", async (req, res): Promise<void> => {
-  const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-  const params = GetBookingParams.safeParse({ id: parseInt(rawId, 10) });
-  if (!params.success) {
-    res.status(400).json({ error: params.error.message });
+    upsertBooking(booking);
+
+    res.status(201).json(GetBookingResponse.parse(buildBookingResponse(booking)));
     return;
   }
 
@@ -112,10 +148,7 @@ router.get("/bookings/:id", async (req, res): Promise<void> => {
   res.json(GetBookingResponse.parse(buildBookingResponse(booking)));
 });
 
-router.patch("/bookings/:id", async (req, res): Promise<void> => {
-  const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-  const params = UpdateBookingParams.safeParse({ id: parseInt(rawId, 10) });
-  if (!params.success) {
+  const booking = findBookingById(params.data.id);
     res.status(400).json({ error: params.error.message });
     return;
   }
@@ -139,23 +172,35 @@ router.patch("/bookings/:id", async (req, res): Promise<void> => {
 
   res.json(UpdateBookingResponse.parse(buildBookingResponse(booking)));
 });
-
-router.delete("/bookings/:id", async (req, res): Promise<void> => {
-  const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-  const params = DeleteBookingParams.safeParse({ id: parseInt(rawId, 10) });
-  if (!params.success) {
+  const booking = findBookingById(params.data.id);
     res.status(400).json({ error: params.error.message });
     return;
   }
 
   const [booking] = await db
     .delete(bookingsTable)
-    .where(eq(bookingsTable.id, params.data.id))
-    .returning();
+  const now = new Date().toISOString();
+  const updatedBooking: BookingRecord = {
+    ...booking,
+    tenantName: parsed.data.tenantName ?? booking.tenantName,
+    tenantPhone: parsed.data.tenantPhone ?? booking.tenantPhone,
+    propertyName: parsed.data.propertyName ?? booking.propertyName,
+    roomNumber: parsed.data.roomNumber ?? booking.roomNumber,
+    actualRent: parsed.data.actualRent ?? booking.actualRent,
+    discountedRent: parsed.data.discountedRent ?? booking.discountedRent,
+    deposit: parsed.data.deposit ?? booking.deposit,
+    maintenanceFee: parsed.data.maintenanceFee ?? booking.maintenanceFee,
+    tokenAmount: parsed.data.tokenAmount ?? booking.tokenAmount,
+    stayDurationMonths: parsed.data.stayDurationMonths ?? booking.stayDurationMonths,
+    noticePeriodMonths: parsed.data.noticePeriodMonths ?? booking.noticePeriodMonths,
+    upiId: parsed.data.upiId ?? booking.upiId,
+    adminPhone: parsed.data.adminPhone ?? booking.adminPhone,
+    updatedAt: now,
+  };
 
-  if (!booking) {
-    res.status(404).json({ error: "Booking not found" });
-    return;
+  upsertBooking(updatedBooking);
+
+  res.json(UpdateBookingResponse.parse(buildBookingResponse(updatedBooking)));
   }
 
   res.sendStatus(204);
@@ -166,10 +211,12 @@ router.post("/bookings/:id/approve", async (req, res): Promise<void> => {
   const params = ApproveBookingParams.safeParse({ id: parseInt(rawId, 10) });
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
-    return;
-  }
+  const bookingIndex = bookingsStore.findIndex((entry) => entry.id === params.data.id);
+  const booking = bookingIndex >= 0 ? bookingsStore[bookingIndex] : undefined;
 
-  const now = new Date();
+  if (bookingIndex >= 0) {
+    bookingsStore.splice(bookingIndex, 1);
+  }
   const expiresAt = new Date(now.getTime() + 15 * 60 * 1000);
 
   const [booking] = await db
@@ -190,18 +237,24 @@ router.post("/bookings/:id/reactivate", async (req, res): Promise<void> => {
   const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const params = ReactivateBookingParams.safeParse({ id: parseInt(rawId, 10) });
   if (!params.success) {
-    res.status(400).json({ error: params.error.message });
-    return;
-  }
-
-  const now = new Date();
+  const booking = findBookingById(params.data.id);
   const expiresAt = new Date(now.getTime() + 15 * 60 * 1000);
 
   const [booking] = await db
     .update(bookingsTable)
     .set({ status: "approved", approvedAt: now, offerExpiresAt: expiresAt })
     .where(eq(bookingsTable.id, params.data.id))
-    .returning();
+  const updatedBooking: BookingRecord = {
+    ...booking,
+    status: "approved",
+    approvedAt: now.toISOString(),
+    offerExpiresAt: expiresAt.toISOString(),
+    updatedAt: now.toISOString(),
+  };
+
+  upsertBooking(updatedBooking);
+
+  res.json(ApproveBookingResponse.parse(buildBookingResponse(updatedBooking)));
 
   if (!booking) {
     res.status(404).json({ error: "Booking not found" });
@@ -215,18 +268,24 @@ router.get("/bookings/:id/whatsapp", async (req, res): Promise<void> => {
   const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const params = GetWhatsappMessageParams.safeParse({ id: parseInt(rawId, 10) });
   if (!params.success) {
-    res.status(400).json({ error: params.error.message });
-    return;
-  }
-
-  const [booking] = await db
+  const booking = findBookingById(params.data.id);
     .select()
     .from(bookingsTable)
     .where(eq(bookingsTable.id, params.data.id));
 
   if (!booking) {
     res.status(404).json({ error: "Booking not found" });
-    return;
+  const updatedBooking: BookingRecord = {
+    ...booking,
+    status: "approved",
+    approvedAt: now.toISOString(),
+    offerExpiresAt: expiresAt.toISOString(),
+    updatedAt: now.toISOString(),
+  };
+
+  upsertBooking(updatedBooking);
+
+  res.json(ReactivateBookingResponse.parse(buildBookingResponse(updatedBooking)));
   }
 
   const domain = process.env.REPLIT_DOMAINS

@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -17,16 +17,10 @@ export const bookingsTable = pgTable("bookings", {
   noticePeriodMonths: integer("notice_period_months").notNull(),
   upiId: text("upi_id"),
   adminPhone: text("admin_phone"),
-  status: text("status").notNull().default("pending"),
-  approvedAt: timestamp("approved_at", { withTimezone: true }),
-  offerExpiresAt: timestamp("offer_expires_at", { withTimezone: true }),
 });
 
 export const insertBookingSchema = createInsertSchema(bookingsTable).omit({
   id: true,
-  approvedAt: true,
-  offerExpiresAt: true,
-  status: true,
 });
 
 export type InsertBooking = z.infer<typeof insertBookingSchema>;
