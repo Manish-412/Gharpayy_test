@@ -20,14 +20,10 @@ export const bookingsTable = pgTable("bookings", {
   status: text("status").notNull().default("pending"),
   approvedAt: timestamp("approved_at", { withTimezone: true }),
   offerExpiresAt: timestamp("offer_expires_at", { withTimezone: true }),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
 
 export const insertBookingSchema = createInsertSchema(bookingsTable).omit({
   id: true,
-  createdAt: true,
-  updatedAt: true,
   approvedAt: true,
   offerExpiresAt: true,
   status: true,

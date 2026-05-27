@@ -26,12 +26,13 @@ function formatIndianCurrency(amount: number): string {
 }
 
 function buildBookingResponse(booking: typeof bookingsTable.$inferSelect) {
+  const now = new Date().toISOString();
   return {
     ...booking,
     approvedAt: booking.approvedAt ? booking.approvedAt.toISOString() : null,
     offerExpiresAt: booking.offerExpiresAt ? booking.offerExpiresAt.toISOString() : null,
-    createdAt: booking.createdAt.toISOString(),
-    updatedAt: booking.updatedAt.toISOString(),
+    createdAt: now,
+    updatedAt: now,
   };
 }
 
@@ -39,7 +40,7 @@ router.get("/bookings", async (req, res): Promise<void> => {
   const bookings = await db
     .select()
     .from(bookingsTable)
-    .orderBy(sql`${bookingsTable.createdAt} DESC`);
+    .orderBy(sql`${bookingsTable.id} DESC`);
   const mapped = bookings.map(buildBookingResponse);
   res.json(ListBookingsResponse.parse(mapped));
 });
@@ -74,12 +75,14 @@ router.post("/bookings", async (req, res): Promise<void> => {
       .values({
         ...parsed.data,
         status: "pending",
-        createdAt: now,
-        updatedAt: now,
       })
       .returning();
 
-    res.status(201).json(GetBookingResponse.parse(buildBookingResponse(booking)));
+    res.status(201).json(GetBookingResponse.parse({
+      ...buildBookingResponse(booking),
+      createdAt: now.toISOString(),
+      updatedAt: now.toISOString(),
+    }));
   } catch (error) {
     console.error("Error creating booking:", error);
     res.status(500).json({
