@@ -61,18 +61,31 @@ router.get("/bookings/stats", async (req, res): Promise<void> => {
 });
 
 router.post("/bookings", async (req, res): Promise<void> => {
-  const parsed = CreateBookingBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
+  try {
+    const parsed = CreateBookingBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+
+    const now = new Date();
+    const [booking] = await db
+      .insert(bookingsTable)
+      .values({
+        ...parsed.data,
+        status: "pending",
+        createdAt: now,
+        updatedAt: now,
+      })
+      .returning();
+
+    res.status(201).json(GetBookingResponse.parse(buildBookingResponse(booking)));
+  } catch (error) {
+    console.error("Error creating booking:", error);
+    res.status(500).json({
+      error: error instanceof Error ? error.message : "Failed to create booking",
+    });
   }
-
-  const [booking] = await db
-    .insert(bookingsTable)
-    .values({ ...parsed.data, status: "pending" })
-    .returning();
-
-  res.status(201).json(GetBookingResponse.parse(buildBookingResponse(booking)));
 });
 
 router.get("/bookings/:id", async (req, res): Promise<void> => {
